@@ -2,12 +2,12 @@ type Account @entity {
   "Account address"
   id: ID!
   balance: BigInt!
-  historicalBalances: [HistoricalBalance!] @derivedFrom(field: "account")
+  datalog: [Datalog] @derivedFrom(field: "account")
 }
 
-type HistoricalBalance @entity {
+type Datalog @entity {
   id: ID!
   account: Account!
-  balance: BigInt!
-  date: DateTime!
+  moment: Int!
+  record: String!
 }

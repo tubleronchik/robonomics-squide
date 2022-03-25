@@ -5,9 +5,10 @@ import {
   SubstrateProcessor,
 } from "@subsquid/substrate-processor";
 import { lookupArchive } from "@subsquid/archive-registry";
-import { Account, HistoricalBalance } from "./model";
-import { BalancesTransferEvent } from "./types/events";
+import { Account, Datalog} from "./model";
+import { BalancesTransferEvent, DatalogNewRecordEvent } from "./types/events";
 import { SimpleConsoleLogger } from "typeorm";
+import { BlockList } from "net";
 
 const processor = new SubstrateProcessor("robonomics_balances");
 
@@ -19,10 +20,9 @@ processor.setDataSource({
   chain: "wss://kusama.rpc.robonomics.network",
 });
 
+
 processor.addEventHandler("balances.Transfer", async (ctx) => {
   const transfer = getTransferEvent(ctx);
-  console.log(`transfer ${transfer}`)
-  console.log(ctx)
   // const tip = ctx.extrinsic?.tip || 0n;
   // const from = ss58.codec(32).encode(transfer.from);
   // const to = ss58.codec(32).encode(transfer.to);
@@ -57,7 +57,47 @@ processor.addEventHandler("balances.Transfer", async (ctx) => {
   // );
 });
 
+processor.addEventHandler("datalog.NewRecord", async (ctx) => {
+  const tr = getDatalogRecord(ctx)
+  // console.log(ctx.event.params[2])
+  console.log(hex_to_ascii(ctx.event.params[2]))
+  // console.log(bin2string(ctx.event.params[2]))
+  // console.log(typeof(ctx.event.params[2]))
+
+})
+
 processor.run();
+
+// function bin2string(array: DatalogParams){
+// 	var result = "";
+// 	for(var i = 0; i < array.value.length; ++i){
+//     // console.log(array.value[i])
+// 		// result+= (String.fromCharCode(array.value[i]));
+// 	}
+// 	return result;
+// }
+
+function hex_to_ascii(datalog_record: DatalogParams)
+ {
+	const hex  = datalog_record.value.toString()
+	let record = ''
+	for (let n = 0; n < hex.length; n += 2) {
+		record = record.concat(String.fromCharCode(parseInt(hex.substr(n, 2), 16)))
+	}
+	return record
+ }
+
+function getDatalogRecord(ctx: EventHandlerContext) {
+  const record = new DatalogNewRecordEvent(ctx)
+  // const [block, store] = record
+  // console.log(String(record.asLatest))
+}
+
+interface DatalogParams {
+  name: String;
+  type: String;
+  value: any;
+}
 
 interface TransferEvent {
   from: Uint8Array;
@@ -67,7 +107,7 @@ interface TransferEvent {
 
 function getTransferEvent(ctx: EventHandlerContext) {
   const event = new BalancesTransferEvent(ctx);
-  console.log(event)
+  // console.log(event)
   // if (event.isV1020) {
   //   const [from, to, amount] = event.asV1020;
   //   return { from, to, amount };

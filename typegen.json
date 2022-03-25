@@ -3,7 +3,8 @@
   "chainVersions": "robonomicsVersions.json",
   "typesBundle": "robonomicsTypesBundle.json",
   "events": [
-    "balances.Transfer"
+    "balances.Transfer",
+    "datalog.NewRecord"
   ],
   "calls": []
 }
