@@ -16,7 +16,7 @@ processor.setTypesBundle("robonomicsTypesBundle.json");
 processor.setBatchSize(500);
 
 processor.setDataSource({
-  archive: 'https://robonomics.indexer.gc.subsquid.io/v4/graphql',
+  archive: lookupArchive("robonomics")[0].url,
   chain: "wss://kusama.rpc.robonomics.network",
 });
 
@@ -24,19 +24,28 @@ processor.addEventHandler("datalog.NewRecord", getDatalogRecord)
 
 processor.run();
 
-function hex_to_ascii(datalogRecord: DatalogParams)
- {
-	const hex  = datalogRecord.value.toString()
-	let record = ''
-	for (let n = 0; n < hex.length; n += 2) {
-		record = record.concat(String.fromCharCode(parseInt(hex.substr(n, 2), 16)))
-	}
-	return record
- }
+function hex_to_ascii(datalogRecord: DatalogParams) {
+  const hex = datalogRecord.value.toString()
+  let record = ''
+  for (let n = 0; n < hex.length; n += 2) {
+    record = record.concat(String.fromCharCode(parseInt(hex.substr(n, 2), 16)))
+  }
+  return record
+}
 
 async function getDatalogRecord(ctx: EventHandlerContext) {
-  let record = new DatalogNewRecordEvent(ctx)
-  console.log(hex_to_ascii(ctx.event.params[2]))
+  const sender = String(ctx.event.params[0].value)
+  if (acl.includes(sender)) {
+    const account = await getOrCreate(ctx.store, Account, sender)
+    console.log(account)
+    const timestamp = ctx.event.params[1].value
+    const record = hex_to_ascii(ctx.event.params[2])
+    console.log(record)
+    const datalog = new Datalog()
+    // datalog.moment = timestamp
+
+
+  }
 }
 
 interface DatalogParams {
@@ -46,23 +55,23 @@ interface DatalogParams {
 }
 
 
-// async function getOrCreate<T extends { id: string }>(
-//   store: Store,
-//   EntityConstructor: EntityConstructor<T>,
-//   id: string
-// ): Promise<T> {
-//   let entity = await store.get<T>(EntityConstructor, {
-//     where: { id },
-//   });
+async function getOrCreate<T extends { id: string }>(
+  store: Store,
+  EntityConstructor: EntityConstructor<T>,
+  id: string
+): Promise<T> {
+  let entity = await store.get<T>(EntityConstructor, {
+    where: { id },
+  });
 
-//   if (entity == null) {
-//     entity = new EntityConstructor();
-//     entity.id = id;
-//   }
+  if (entity == null) {
+    entity = new EntityConstructor();
+    entity.id = id;
+  }
 
-//   return entity;
-// }
+  return entity;
+}
 
 type EntityConstructor<T> = {
-  new (...args: any[]): T;
+  new(...args: any[]): T;
 };
