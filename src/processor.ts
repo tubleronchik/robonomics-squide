@@ -1,59 +1,52 @@
-import * as ss58 from "@subsquid/ss58";
 import {
   EventHandlerContext,
   Store,
   SubstrateProcessor,
 } from "@subsquid/substrate-processor";
 import { lookupArchive } from "@subsquid/archive-registry";
-import { Account, Datalog} from "./model";
-import { BalancesTransferEvent, DatalogNewRecordEvent } from "./types/events";
-import { SimpleConsoleLogger } from "typeorm";
-import { BlockList } from "net";
+import { Account, Datalog } from "./model";
+import { getAgents } from "./utils/utils";
 
+const whiteListAccounts = getAgents();
 const processor = new SubstrateProcessor("robonomics_balances");
 
 processor.setTypesBundle("robonomicsTypesBundle.json");
 processor.setBatchSize(500);
-
 processor.setDataSource({
   archive: lookupArchive("robonomics")[0].url,
   chain: "wss://kusama.rpc.robonomics.network",
 });
-
-processor.addEventHandler("datalog.NewRecord", getDatalogRecord)
-
+processor.addEventHandler("datalog.NewRecord", getDatalogRecord);
 processor.run();
 
-function hex_to_ascii(datalogRecord: DatalogParams) {
-  const hex = datalogRecord.value.toString()
-  let record = ''
-  for (let n = 0; n < hex.length; n += 2) {
-    record = record.concat(String.fromCharCode(parseInt(hex.substr(n, 2), 16)))
-  }
-  return record
+function hexToUtf8(datalogString: DatalogParams) {
+  const record = datalogString.value.toString();
+  return decodeURIComponent(
+    record.replace(/\s+/g, "").replace(/[0-9a-f]{2}/g, "%$&")
+  ).slice(2);
 }
 
 async function getDatalogRecord(ctx: EventHandlerContext) {
-  const sender = String(ctx.event.params[0].value)
-  if (acl.includes(sender)) {
-    const account = await getOrCreate(ctx.store, Account, sender)
-    console.log(account)
-    const timestamp = ctx.event.params[1].value
-    const record = hex_to_ascii(ctx.event.params[2])
-    console.log(record)
-    const datalog = new Datalog()
-    // datalog.moment = timestamp
-
-
+  const sender = String(ctx.event.params[0].value);
+  if (whiteListAccounts.includes(sender)) {
+    const account = await getOrCreate(ctx.store, Account, ctx.event.id);
+    account.address = sender;
+    const timestamp = Number(ctx.event.params[1].value);
+    const record = hexToUtf8(ctx.event.params[2]);
+    const datalog = new Datalog();
+    datalog.moment = timestamp;
+    datalog.record = record;
+    datalog.blockHash = String(ctx.block.hash);
+    account.datalog = datalog;
+    await ctx.store.save(account);
   }
 }
 
 interface DatalogParams {
-  name: String;
-  type: String;
+  name: string;
+  type: string;
   value: any;
 }
-
 
 async function getOrCreate<T extends { id: string }>(
   store: Store,
@@ -68,10 +61,9 @@ async function getOrCreate<T extends { id: string }>(
     entity = new EntityConstructor();
     entity.id = id;
   }
-
   return entity;
 }
 
 type EntityConstructor<T> = {
-  new(...args: any[]): T;
+  new (...args: any[]): T;
 };

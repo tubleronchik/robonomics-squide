@@ -1,5 +1,6 @@
-import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_, OneToMany as OneToMany_} from "typeorm"
-import {Datalog} from "./datalog.model"
+import {Entity as Entity_, Column as Column_, PrimaryColumn as PrimaryColumn_} from "typeorm"
+import * as marshal from "./marshal"
+import {Datalog} from "./_datalog"
 
 @Entity_()
 export class Account {
@@ -13,6 +14,9 @@ export class Account {
   @PrimaryColumn_()
   id!: string
 
-  @OneToMany_(() => Datalog, e => e.account)
-  datalog!: Datalog[]
+  @Column_("text", {nullable: false})
+  address!: string
+
+  @Column_("jsonb", {transformer: {to: obj => obj.toJSON(), from: obj => new Datalog(undefined, marshal.nonNull(obj))}, nullable: false})
+  datalog!: Datalog
 }
