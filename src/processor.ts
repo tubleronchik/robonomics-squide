@@ -8,10 +8,9 @@ import { Account, Datalog } from "./model";
 import { getAgents } from "./utils/utils";
 
 const whiteListAccounts = getAgents();
-const processor = new SubstrateProcessor("robonomics_balances");
-
+const processor = new SubstrateProcessor("robonomics_datalogs");
 processor.setTypesBundle("robonomicsTypesBundle.json");
-processor.setBatchSize(500);
+processor.setBatchSize(200);
 processor.setDataSource({
   archive: lookupArchive("robonomics")[0].url,
   chain: "wss://kusama.rpc.robonomics.network",
@@ -31,13 +30,13 @@ async function getDatalogRecord(ctx: EventHandlerContext) {
   if (whiteListAccounts.includes(sender)) {
     const account = await getOrCreate(ctx.store, Account, ctx.event.id);
     account.address = sender;
-    const timestamp = Number(ctx.event.params[1].value);
+    const timestamp = BigInt(Number(ctx.event.params[1].value));
     const record = hexToUtf8(ctx.event.params[2]);
     const datalog = new Datalog();
-    datalog.moment = timestamp;
     datalog.record = record;
     datalog.blockHash = String(ctx.block.hash);
     account.datalog = datalog;
+    account.moment = timestamp;
     await ctx.store.save(account);
   }
 }

@@ -17,6 +17,9 @@ export class Account {
   @Column_("text", {nullable: false})
   address!: string
 
+  @Column_("numeric", {transformer: marshal.bigintTransformer, nullable: false})
+  moment!: bigint
+
   @Column_("jsonb", {transformer: {to: obj => obj.toJSON(), from: obj => new Datalog(undefined, marshal.nonNull(obj))}, nullable: false})
   datalog!: Datalog
 }

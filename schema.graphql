@@ -2,11 +2,11 @@ type Account @entity {
   "Account address"
   id: ID! # event id
   address: String!
+  moment: BigInt!
   datalog: Datalog!
 }
 
 type Datalog {
   blockHash: String!
-  moment: Int!
   record: String!
 }
