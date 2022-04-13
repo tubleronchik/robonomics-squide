@@ -10,6 +10,7 @@ ADD package-lock.json .
 RUN npm ci
 ADD tsconfig.json .
 ADD src src
+COPY agents.json . 
 RUN npm run build
 
 FROM node-with-gyp AS deps
