@@ -11,7 +11,6 @@ ADD package-lock.json .
 RUN npm ci
 ADD tsconfig.json .
 ADD src src
-COPY agents.json . 
 RUN npm run build
 
 FROM node-with-gyp AS deps
@@ -28,6 +27,8 @@ COPY --from=deps /squid/node_modules node_modules
 COPY --from=builder /squid/lib lib
 ADD db db
 ADD schema.graphql .
+COPY agents.json .
+COPY robonomicsTypesBundle.json .
 # TODO: use shorter PROMETHEUS_PORT
 ENV PROCESSOR_PROMETHEUS_PORT 3000
 EXPOSE 3000
