@@ -1,2 +1,2 @@
 export * from "./account.model"
-export * from "./_datalog"
+export * from "./datalog.model"

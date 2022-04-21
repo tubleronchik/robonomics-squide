@@ -28,16 +28,16 @@ function hexToUtf8(datalogString: DatalogParams) {
 async function getDatalogRecord(ctx: EventHandlerContext) {
   const sender = String(ctx.event.params[0].value);
   if (whiteListAccounts.includes(sender)) {
-    const account = await getOrCreate(ctx.store, Account, ctx.event.id);
-    account.address = sender;
+    const account = await getOrCreate(ctx.store, Account, sender);
     const timestamp = BigInt(Number(ctx.event.params[1].value));
     const record = hexToUtf8(ctx.event.params[2]);
-    const datalog = new Datalog();
+    const datalog = await getOrCreate(ctx.store, Datalog, ctx.event.id)
     datalog.record = record;
+    datalog.account = account;
     datalog.blockHash = String(ctx.block.hash);
-    account.datalog = datalog;
-    account.moment = timestamp;
+    datalog.blockMoment = timestamp;
     await ctx.store.save(account);
+    await ctx.store.save(datalog);
   }
 }
 

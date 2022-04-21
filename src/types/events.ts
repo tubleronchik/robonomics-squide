@@ -11,7 +11,7 @@ export class DatalogNewRecordEvent {
    * New data added.
    */
   get isV5(): boolean {
-    return this.ctx._chain.getEventHash('datalog.NewRecord') === '07ad1120d7700ba803c78da859323f5300cb02c262c2813d857801b0c06ce6cc'
+    return this.ctx._chain.getEventHash('datalog.NewRecord') === '9b7852b5d9c95c8ccf8dac3bd64f50fd6e8caf7679bf935c0b99a12dba866e32'
   }
 
   /**
