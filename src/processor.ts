@@ -6,6 +6,8 @@ import {
 import { lookupArchive } from "@subsquid/archive-registry";
 import { Account, Datalog } from "./model";
 import { getAgents } from "./utils/utils";
+import { IPFS, create } from 'ipfs-core'
+import type { CID } from 'ipfs-core'
 
 const whiteListAccounts = getAgents();
 const processor = new SubstrateProcessor("robonomics_datalogs");
@@ -18,6 +20,12 @@ processor.setDataSource({
 processor.addEventHandler("datalog.NewRecord", getDatalogRecord);
 processor.run();
 
+async function main() {
+  const node = await create({repo: 'ok' + Math.random()});
+  return node
+}
+const node = main();
+
 function hexToUtf8(datalogString: DatalogParams) {
   const record = datalogString.value.toString();
   return decodeURIComponent(
@@ -25,8 +33,27 @@ function hexToUtf8(datalogString: DatalogParams) {
   ).slice(2);
 }
 
+const readFile = async (ipfs: IPFS, cid: CID): Promise<string> => {
+  console.log("read")
+  const decoder = new TextDecoder()
+  let content = ''
+  for await (const chunk of ipfs.cat(cid)) {
+    console.log("in for")
+    content += decoder.decode(chunk)
+    console.log(content)
+  }
+
+  return content
+}
+
+async function getDataFromIPFS(cid: any) {
+  const content = await readFile(await node, cid)
+  console.log('Added file contents:', content)
+}
+
 async function getDatalogRecord(ctx: EventHandlerContext) {
   const sender = String(ctx.event.params[0].value);
+  console.log(await getDataFromIPFS("QmdXxZKYq5QuE1dn56AQFsNEBjHhSEi7yrhmC45Z2WBj4T"))
   if (whiteListAccounts.includes(sender)) {
     const account = await getOrCreate(ctx.store, Account, sender);
     const timestamp = BigInt(Number(ctx.event.params[1].value));
