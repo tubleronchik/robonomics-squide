@@ -21,15 +21,12 @@ processor.addEventHandler("datalog.NewRecord", getDatalogRecord);
 processor.run();
 
 async function main() {
-  const node = await create({repo: 'ok' + Math.random(), config: {Bootstrap: [
+  const node = await create({repo: "ipfs_db", config: {Bootstrap: [
     "/dns4/1.pubsub.aira.life/tcp/443/wss/ipfs/QmdfQmbmXt6sqjZyowxPUsmvBsgSGQjm4VXrV7WGy62dv8",
     "/dns4/2.pubsub.aira.life/tcp/443/wss/ipfs/QmPTFt7GJ2MfDuVYwJJTULr6EnsQtGVp8ahYn9NSyoxmd9",
     "/dns4/3.pubsub.aira.life/tcp/443/wss/ipfs/QmWZSKTEQQ985mnNzMqhGCrwQ1aTA6sxVsorsycQz9cQrw   "       
   ]}});
   const peers = await node.swarm.peers();
-  console.log(`peers ${peers}`)
-  
-  peers.forEach(peer => console.log(peer.addr.toString()))
 
   return node
 }
@@ -62,7 +59,6 @@ async function getDataFromIPFS(cid: any) {
 
 async function getDatalogRecord(ctx: EventHandlerContext) {
   const sender = String(ctx.event.params[0].value);
-  console.log(await getDataFromIPFS("QmdXxZKYq5QuE1dn56AQFsNEBjHhSEi7yrhmC45Z2WBj4T"))
   if (whiteListAccounts.includes(sender)) {
     const account = await getOrCreate(ctx.store, Account, sender);
     const timestamp = BigInt(Number(ctx.event.params[1].value));
