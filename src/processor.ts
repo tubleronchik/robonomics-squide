@@ -21,7 +21,16 @@ processor.addEventHandler("datalog.NewRecord", getDatalogRecord);
 processor.run();
 
 async function main() {
-  const node = await create({repo: 'ok' + Math.random()});
+  const node = await create({repo: 'ok' + Math.random(), config: {Bootstrap: [
+    "/dns4/1.pubsub.aira.life/tcp/443/wss/ipfs/QmdfQmbmXt6sqjZyowxPUsmvBsgSGQjm4VXrV7WGy62dv8",
+    "/dns4/2.pubsub.aira.life/tcp/443/wss/ipfs/QmPTFt7GJ2MfDuVYwJJTULr6EnsQtGVp8ahYn9NSyoxmd9",
+    "/dns4/3.pubsub.aira.life/tcp/443/wss/ipfs/QmWZSKTEQQ985mnNzMqhGCrwQ1aTA6sxVsorsycQz9cQrw   "       
+  ]}});
+  const peers = await node.swarm.peers();
+  console.log(`peers ${peers}`)
+  
+  peers.forEach(peer => console.log(peer.addr.toString()))
+
   return node
 }
 const node = main();
