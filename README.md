@@ -13,10 +13,10 @@ It's necessary to create a file named `agents.json`, which contains list of addr
 
 ```
 # Install dependencies
-yarn install
+npm ci
 
 # Compile typescript files
-yarn build
+npm run build
 
 # Start target Postgres database
 docker-compose up -d

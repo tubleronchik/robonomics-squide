@@ -21,13 +21,13 @@ processor.addEventHandler("datalog.NewRecord", getDatalogRecord);
 processor.run();
 
 async function main() {
-  const node = await create({repo: "ipfs_db", config: {Bootstrap: [
+  const node = await create({repo: "iok0.3150959732117198", config: {Bootstrap: [
     "/dns4/1.pubsub.aira.life/tcp/443/wss/ipfs/QmdfQmbmXt6sqjZyowxPUsmvBsgSGQjm4VXrV7WGy62dv8",
     "/dns4/2.pubsub.aira.life/tcp/443/wss/ipfs/QmPTFt7GJ2MfDuVYwJJTULr6EnsQtGVp8ahYn9NSyoxmd9",
     "/dns4/3.pubsub.aira.life/tcp/443/wss/ipfs/QmWZSKTEQQ985mnNzMqhGCrwQ1aTA6sxVsorsycQz9cQrw   "       
   ]}});
-  const peers = await node.swarm.peers();
-
+  const peers = await node.swarm.peers()
+  console.log(`Peers: ${peers}`)
   return node
 }
 const node = main();
@@ -40,11 +40,9 @@ function hexToUtf8(datalogString: DatalogParams) {
 }
 
 const readFile = async (ipfs: IPFS, cid: CID): Promise<string> => {
-  console.log("read")
   const decoder = new TextDecoder()
   let content = ''
   for await (const chunk of ipfs.cat(cid)) {
-    console.log("in for")
     content += decoder.decode(chunk)
     console.log(content)
   }
@@ -54,7 +52,7 @@ const readFile = async (ipfs: IPFS, cid: CID): Promise<string> => {
 
 async function getDataFromIPFS(cid: any) {
   const content = await readFile(await node, cid)
-  console.log('Added file contents:', content)
+  return content
 }
 
 async function getDatalogRecord(ctx: EventHandlerContext) {
@@ -63,6 +61,11 @@ async function getDatalogRecord(ctx: EventHandlerContext) {
     const account = await getOrCreate(ctx.store, Account, sender);
     const timestamp = BigInt(Number(ctx.event.params[1].value));
     const record = hexToUtf8(ctx.event.params[2]);
+    console.log(`record ${record}`)
+    if (record.startsWith("Qm")) {
+      const ipfsData = await getDataFromIPFS(record)
+      console.log(ipfsData)
+    }
     const datalog = await getOrCreate(ctx.store, Datalog, ctx.event.id)
     datalog.record = record;
     datalog.account = account;
