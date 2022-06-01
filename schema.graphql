@@ -10,5 +10,11 @@ type Datalog  @entity{
   blockHash: String!
   record: String!
   blockMoment: BigInt!
+  status: String!
 }
 
+type IPFSData @entity{
+  id: ID!
+  datalog: Datalog!
+  data: String!
+}

@@ -23,4 +23,7 @@ export class Datalog {
 
   @Column_("numeric", {transformer: marshal.bigintTransformer, nullable: false})
   blockMoment!: bigint
+
+  @Column_("text", {nullable: false})
+  status!: string
 }

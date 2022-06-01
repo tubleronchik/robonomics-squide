@@ -4,10 +4,9 @@ import {
   SubstrateProcessor,
 } from "@subsquid/substrate-processor";
 import { lookupArchive } from "@subsquid/archive-registry";
-import { Account, Datalog } from "./model";
+import { Account, Datalog, IPFSData } from "./model";
 import { getAgents } from "./utils/utils";
-import { IPFS, create } from 'ipfs-core'
-import type { CID } from 'ipfs-core'
+import axios from 'axios';
 
 const whiteListAccounts = getAgents();
 const processor = new SubstrateProcessor("robonomics_datalogs");
@@ -20,18 +19,6 @@ processor.setDataSource({
 processor.addEventHandler("datalog.NewRecord", getDatalogRecord);
 processor.run();
 
-async function main() {
-  const node = await create({repo: "iok0.3150959732117198", config: {Bootstrap: [
-    "/dns4/1.pubsub.aira.life/tcp/443/wss/ipfs/QmdfQmbmXt6sqjZyowxPUsmvBsgSGQjm4VXrV7WGy62dv8",
-    "/dns4/2.pubsub.aira.life/tcp/443/wss/ipfs/QmPTFt7GJ2MfDuVYwJJTULr6EnsQtGVp8ahYn9NSyoxmd9",
-    "/dns4/3.pubsub.aira.life/tcp/443/wss/ipfs/QmWZSKTEQQ985mnNzMqhGCrwQ1aTA6sxVsorsycQz9cQrw   "       
-  ]}});
-  const peers = await node.swarm.peers()
-  console.log(`Peers: ${peers}`)
-  return node
-}
-const node = main();
-
 function hexToUtf8(datalogString: DatalogParams) {
   const record = datalogString.value.toString();
   return decodeURIComponent(
@@ -39,20 +26,17 @@ function hexToUtf8(datalogString: DatalogParams) {
   ).slice(2);
 }
 
-const readFile = async (ipfs: IPFS, cid: CID): Promise<string> => {
-  const decoder = new TextDecoder()
-  let content = ''
-  for await (const chunk of ipfs.cat(cid)) {
-    content += decoder.decode(chunk)
-    console.log(content)
+async function getDataFromIPFS(hash: String) {
+  try {
+    const res = await axios.get(`https://cloudflare-ipfs.com/ipfs/${hash}`);
+    return JSON.stringify(res.data)
   }
-
-  return content
-}
-
-async function getDataFromIPFS(cid: any) {
-  const content = await readFile(await node, cid)
-  return content
+  catch(error) {
+    if (axios.isAxiosError(error)) {
+      console.log(`Error downloading file from IPFS: ${error.response?.status} ${error.response?.statusText}`)
+    }
+    return
+  }
 }
 
 async function getDatalogRecord(ctx: EventHandlerContext) {
@@ -62,17 +46,30 @@ async function getDatalogRecord(ctx: EventHandlerContext) {
     const timestamp = BigInt(Number(ctx.event.params[1].value));
     const record = hexToUtf8(ctx.event.params[2]);
     console.log(`record ${record}`)
-    if (record.startsWith("Qm")) {
-      const ipfsData = await getDataFromIPFS(record)
-      console.log(ipfsData)
-    }
     const datalog = await getOrCreate(ctx.store, Datalog, ctx.event.id)
     datalog.record = record;
     datalog.account = account;
     datalog.blockHash = String(ctx.block.hash);
     datalog.blockMoment = timestamp;
+    datalog.status = "not download"
     await ctx.store.save(account);
     await ctx.store.save(datalog);
+    if (record.startsWith("Qm")) {
+      const ipfsData = await getDataFromIPFS(record)
+      if (ipfsData) {
+        const ipfsDb = await getOrCreate(ctx.store, IPFSData, record)
+        ipfsDb.data = ipfsData
+        ipfsDb.datalog = datalog
+        await ctx.store.save(ipfsDb)
+        datalog.status = "download"
+        console.log(ipfsDb)
+      }
+      // else {
+      //   account.status = "not download"
+      // }
+      console.log(account)
+    }
+    // await ctx.store.save(account);
   }
 }
 
@@ -101,3 +98,4 @@ async function getOrCreate<T extends { id: string }>(
 type EntityConstructor<T> = {
   new (...args: any[]): T;
 };
+
