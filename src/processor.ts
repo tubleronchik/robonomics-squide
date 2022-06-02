@@ -60,8 +60,9 @@ async function getDatalogRecord(ctx: EventHandlerContext) {
         const ipfsDb = await getOrCreate(ctx.store, IPFSData, record)
         ipfsDb.data = ipfsData
         ipfsDb.datalog = datalog
-        await ctx.store.save(ipfsDb)
         datalog.status = "download"
+        await ctx.store.save(datalog)
+        await ctx.store.save(ipfsDb)
         console.log(ipfsDb)
       }
       // else {
